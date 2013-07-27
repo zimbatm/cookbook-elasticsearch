@@ -11,6 +11,7 @@ include_recipe "ark"
 #
 group node.elasticsearch[:user] do
   action :create
+  system true
 end
 
 user node.elasticsearch[:user] do
@@ -18,15 +19,8 @@ user node.elasticsearch[:user] do
   home    "#{node.elasticsearch[:dir]}/elasticsearch"
   shell   "/bin/bash"
   gid     node.elasticsearch[:user]
-  supports :manage_home => false
+  system  true
   action  :create
-end
-
-# FIX: Work around the fact that Chef creates the directory even for `manage_home: false`
-bash "remove the elasticsearch user home" do
-  user    'root'
-  code    "rm -rf  #{node.elasticsearch[:dir]}/elasticsearch"
-  only_if "test -d #{node.elasticsearch[:dir]}/elasticsearch"
 end
 
 # Create ES directories
