@@ -47,9 +47,15 @@ end
 
 # Create service
 #
+
+template "/etc/default/elasticsearch" do
+  source "elasticsearch.default.erb"
+  mode 0644
+end
+
 template "/etc/init.d/elasticsearch" do
   source "elasticsearch.init.erb"
-  owner 'root' and mode 0755
+  mode 0755
 end
 
 service "elasticsearch" do
@@ -74,34 +80,6 @@ ark "elasticsearch" do
 
   notifies :start,   'service[elasticsearch]'
   notifies :restart, 'service[elasticsearch]'
-end
-
-# Increase open file limits
-#
-bash "enable user limits" do
-  user 'root'
-
-  code <<-END.gsub(/^    /, '')
-    echo 'session    required   pam_limits.so' >> /etc/pam.d/su
-  END
-
-  not_if { ::File.read("/etc/pam.d/su").match(/^session    required   pam_limits\.so/) }
-end
-
-bash "increase limits for the elasticsearch user" do
-  user 'root'
-
-  code <<-END.gsub(/^    /, '')
-    echo '#{node.elasticsearch.fetch(:user, "elasticsearch")}     -    nofile    #{node.elasticsearch[:limits][:nofile]}'  >> /etc/security/limits.conf
-    echo '#{node.elasticsearch.fetch(:user, "elasticsearch")}     -    memlock   #{node.elasticsearch[:limits][:memlock]}' >> /etc/security/limits.conf
-  END
-
-  not_if do
-    file = ::File.read("/etc/security/limits.conf")
-    file.include?("#{node.elasticsearch.fetch(:user, "elasticsearch")}     -    nofile    #{node.elasticsearch[:limits][:nofile]}") \
-    &&           \
-    file.include?("#{node.elasticsearch.fetch(:user, "elasticsearch")}     -    memlock   #{node.elasticsearch[:limits][:memlock]}")
-  end
 end
 
 # Create file with ES environment variables
